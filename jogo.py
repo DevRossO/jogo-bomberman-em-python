@@ -4,6 +4,12 @@ import sys
 
 pygame.init()
 
+def encontrar_jogador():
+    for y in range(tamanho):
+        for x in range(tamanho):
+            if tabuleiro[y][x] == jogador:
+                return x, y
+
 vazio = 0
 parede = 1
 obstaculo = 2
@@ -40,6 +46,24 @@ while rodando:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             rodando = False
+
+        if event.type == pygame.KEYDOWN:
+            x, y = encontrar_jogador()
+            novo_x, novo_y = x, y
+
+            if event.key == pygame.K_UP:
+                novo_y -= 1
+            elif event.key == pygame.K_DOWN:
+                novo_y += 1
+            elif event.key == pygame.K_LEFT:
+                novo_x -= 1
+            elif event.key == pygame.K_RIGHT:
+                novo_x += 1
+
+            if 0 <= novo_x < tamanho and 0 <= novo_y < tamanho:
+                if tabuleiro[novo_y][novo_x] == vazio:
+                    tabuleiro[y][x] = vazio
+                    tabuleiro[novo_y][novo_x] = jogador
 
     for y in range(tamanho):
         for x in range(tamanho):

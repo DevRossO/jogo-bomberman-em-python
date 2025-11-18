@@ -1,13 +1,17 @@
 import pygame
 import sys
+import time
 
-pygame.init()
+usuario = input("Digite seu nome: ")
+
+pygame.init()  
 
 vazio = 0
 parede = 1
 obstaculo = 2
 jogador = "J"
 inimigo = "I"
+inimigo2 = "H"
 bomba = "B"
 
 tamanho = 11
@@ -24,7 +28,32 @@ CORES = {
 
 player_img = pygame.transform.scale(pygame.image.load("sprites/player.png"), (celula, celula))
 enemy_img = pygame.transform.scale(pygame.image.load("sprites/enemy.gif"), (celula, celula))
+enemy2_img = pygame.transform.scale(pygame.image.load("sprites/enemy2.png"), (celula, celula))
 bomb_img = pygame.transform.scale(pygame.image.load("sprites/bomb.png"), (celula, celula))
+
+def organizar_ranking():
+    try:
+        with open("ranking.txt", "r") as arquivo:
+            linhas = arquivo.readlines()
+
+        dados = []
+        for linha in linhas:
+            nome, tempo = linha.strip().split(",")
+            tempo = float(tempo.replace(" seg", ""))
+            dados.append((nome, tempo))
+
+        dados.sort(key=lambda x: x[1])
+
+        with open("ranking.txt", "w") as arquivo:
+            for nome, tempo in dados:
+                arquivo.write(f"{nome},{tempo:.2f} seg\n")
+
+    except:
+        pass
+
+def salvar_ranking(nome, tempo):
+     with open("ranking.txt", "a") as arquivo:
+        arquivo.write(f"{nome},{tempo:.2f} segundos\n")
 
 def encontrar_jogador():
     for y in range(tamanho):
@@ -35,7 +64,7 @@ def encontrar_jogador():
 
 def inimigos_restantes():
     for linha in tabuleiro:
-        if inimigo in linha:
+        if inimigo in linha or inimigo2 in linha:
             return True
     return False
 
@@ -48,23 +77,25 @@ def mostrar_mensagem_final(texto):
     tela.blit(superficie, rect)
     pygame.display.update()
 
-    while True:
+    esperando = True
+
+    while esperando:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                esperando = False
+    return
 
 tabuleiro = [
     [parede, parede, parede, parede, parede, parede, parede, parede, parede, parede, parede],
-    [parede, jogador, vazio, vazio, obstaculo, vazio, vazio, obstaculo, vazio, inimigo, parede],
+    [parede, jogador, vazio, vazio, obstaculo, vazio, inimigo2, obstaculo, vazio, inimigo, parede],
     [parede, vazio, parede, vazio, parede, vazio, parede, vazio, parede, vazio, parede],
-    [parede, vazio, vazio, vazio, obstaculo, vazio, vazio, vazio, vazio, vazio, parede],
+    [parede, vazio, inimigo2, vazio, obstaculo, vazio, vazio, vazio, vazio, vazio, parede],
     [parede, obstaculo, parede, vazio, parede, vazio, parede, vazio, parede, inimigo, parede],
     [parede, vazio, vazio, vazio, vazio, vazio, vazio, vazio, vazio, vazio, parede],
     [parede, inimigo, parede, vazio, parede, vazio, parede, vazio, parede, vazio, parede],
-    [parede, vazio, vazio, vazio, obstaculo, vazio, vazio, vazio, vazio, vazio, parede],
+    [parede, vazio, vazio, inimigo2, obstaculo, vazio, vazio, vazio, vazio, vazio, parede],
     [parede, vazio, parede, vazio, parede, vazio, parede, vazio, parede, vazio, parede],
-    [parede, inimigo, vazio, vazio, obstaculo, vazio, vazio, obstaculo, vazio, vazio, parede],
+    [parede, inimigo, vazio, vazio, obstaculo, vazio, inimigo2, obstaculo, vazio, vazio, parede],
     [parede, parede, parede, parede, parede, parede, parede, parede, parede, parede, parede],
 ]
 
@@ -74,6 +105,7 @@ pygame.display.set_caption("Bomberman Python MVP")
 tempo_bomba = None
 pos_bomba = None
 
+inicio = time.time()
 rodando = True
 while rodando:
     for event in pygame.event.get():
@@ -132,21 +164,29 @@ while rodando:
             for ex, ey in explosoes:
                 if 0 <= ex < tamanho and 0 <= ey < tamanho:
 
-                    if tabuleiro[ey][ex] == inimigo:
+                    if tabuleiro[ey][ex] == inimigo or tabuleiro[ey][ex] == inimigo2:
                         tabuleiro[ey][ex] = vazio
 
                     if tabuleiro[ey][ex] == obstaculo:
                         tabuleiro[ey][ex] = vazio
 
                     if tabuleiro[ey][ex] == jogador:
+                        tempo_total = time.time() - inicio
                         mostrar_mensagem_final("Você morreu!")
+                        salvar_ranking(usuario, tempo_total)
+                        pygame.quit()
+                        sys.exit()
 
             tabuleiro[by][bx] = vazio
             pos_bomba = None
             tempo_bomba = None
 
             if not inimigos_restantes():
+                tempo_total = time.time() - inicio
                 mostrar_mensagem_final("Você passou de fase!")
+                salvar_ranking(usuario, tempo_total)
+                pygame.quit()
+                sys.exit()
 
     tela.fill((0, 0, 0))
 
@@ -167,6 +207,9 @@ while rodando:
 
             elif valor == inimigo:
                 tela.blit(enemy_img, (x * celula, y * celula))
+            
+            elif valor == inimigo2:
+                tela.blit(enemy2_img, (x * celula, y * celula))
 
             elif valor == bomba:
                 tela.blit(bomb_img, (x * celula, y * celula))
@@ -174,6 +217,12 @@ while rodando:
             pygame.draw.rect(tela, (20, 20, 20), (x * celula, y * celula, celula, celula), 1)
 
     pygame.display.flip()
+fim = time.time()
+tempo_total = fim - inicio
+
+print(f"Jogador: {usuario} - Tempo total de jogo: {tempo_total:.2f} segundos")
+
+salvar_ranking(usuario, tempo_total)
 
 pygame.quit()
 sys.exit()
